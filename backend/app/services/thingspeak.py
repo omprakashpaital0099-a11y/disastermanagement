@@ -11,16 +11,6 @@ class ThingSpeakError(RuntimeError):
     pass
 
 
-FIELD_NAMES = (
-    "soil_moisture",
-    "water_level",
-    "temperature",
-    "humidity",
-    "rainfall",
-    "flame_sensor",
-)
-
-
 def _number(value: Any) -> float | None:
     if value is None or value == "":
         return None
@@ -31,12 +21,18 @@ def _number(value: Any) -> float | None:
 
 
 def _reading(feed: dict[str, Any]) -> SensorReading:
+    settings = get_settings()
     timestamp = feed.get("created_at")
     if not timestamp:
         raise ThingSpeakError("ThingSpeak response did not include a timestamp")
     return SensorReading(
         timestamp=datetime.fromisoformat(timestamp.replace("Z", "+00:00")),
-        **{name: _number(feed.get(f"field{index}")) for index, name in enumerate(FIELD_NAMES, start=1)},
+        soil_moisture=_number(feed.get("field1")),
+        water_level=_number(feed.get("field2")),
+        temperature=_number(feed.get("field3")),
+        humidity=_number(feed.get("field4")),
+        rainfall=_number(feed.get(f"field{settings.thingspeak_rainfall_field}")),
+        flame_sensor=_number(feed.get(f"field{settings.thingspeak_flame_field}")),
     )
 
 

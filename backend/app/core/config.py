@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     thingspeak_api_url: str = "https://api.thingspeak.com"
     thingspeak_timeout_seconds: float = 10.0
     thingspeak_max_age_seconds: int = 300
+    thingspeak_flame_field: int = 5
+    thingspeak_rainfall_field: int = 6
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

@@ -32,6 +32,28 @@ ThingSpeak field mapping is `field1` soil moisture, `field2` water level, `field
 ## Streamlit Community Cloud
 
 1. Push the repository to GitHub with `app.py` and `requirements.txt` at the repository root.
+
+## ThingSpeak connection
+
+The FastAPI service connects to the configured ThingSpeak channel and exposes the normalized readings to Streamlit:
+
+```text
+ThingSpeak -> backend/app/services/thingspeak.py -> /api/v1/sensors/latest
+									 -> /api/v1/sensors/history
+									 -> Streamlit dashboard
+```
+
+Configure these values in `backend/.env` (never commit that file):
+
+```env
+THINGSPEAK_CHANNEL_ID=3490996
+THINGSPEAK_READ_API_KEY=
+THINGSPEAK_API_URL=https://api.thingspeak.com
+THINGSPEAK_FLAME_FIELD=5
+THINGSPEAK_RAINFALL_FIELD=6
+```
+
+The configured channel is public, so its read key may remain empty. A private channel requires its ThingSpeak read API key. The backend rejects stale latest readings using `THINGSPEAK_MAX_AGE_SECONDS`; historical readings remain available when the device has not reported recently.
 2. Open Streamlit Community Cloud and select **Deploy an app**.
 3. Choose the repository and select `app.py` as the main file.
 4. Add `PRITHVINET_API_URL` through the app settings or environment configuration if the API is hosted elsewhere.
