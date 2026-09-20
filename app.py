@@ -9,8 +9,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit_folium import st_folium
+from dotenv import load_dotenv
 
 from data_loader import DataSourceError, filter_history, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_stats
+
+load_dotenv()
 
 st.set_page_config(page_title="SPATIAL X | Environmental Intelligence", page_icon="🌿", layout="wide", initial_sidebar_state="expanded")
 
@@ -152,7 +155,20 @@ def render_sensor_cards(sensor: dict[str, Any] | None) -> None:
 def render_map(alerts: list[dict[str, Any]], locations: list[dict[str, Any]]) -> None:
     st.markdown(f'<div class="section-label">{t("map")}</div>', unsafe_allow_html=True)
     dark = st.session_state.theme == t("dark")
-    fmap = folium.Map(location=[22.5, 79.0], zoom_start=5, tiles="CartoDB dark_matter" if dark else "OpenStreetMap", control_scale=True)
+    mapbox_token = os.getenv("MAPBOX_TOKEN", "").strip()
+    if mapbox_token:
+        style = "mapbox/dark-v11" if dark else "mapbox/streets-v12"
+        fmap = folium.Map(location=[22.5, 79.0], zoom_start=5, tiles=None, control_scale=True)
+        folium.TileLayer(
+            tiles=f"https://api.mapbox.com/styles/v1/{style}/tiles/{{z}}/{{x}}/{{y}}?access_token={mapbox_token}",
+            attr="© Mapbox © OpenStreetMap",
+            name="Mapbox",
+            overlay=False,
+            control=True,
+            max_zoom=18,
+        ).add_to(fmap)
+    else:
+        fmap = folium.Map(location=[22.5, 79.0], zoom_start=5, tiles="CartoDB dark_matter" if dark else "OpenStreetMap", control_scale=True)
     marker_count = 0
     for location in locations:
         try:
