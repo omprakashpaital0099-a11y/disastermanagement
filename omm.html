@@ -426,7 +426,6 @@
 			{ lat: 26.1, lon: 91.7, hazard: 'flood', severity: 'watch', label: 'Guwahati', location: 'Guwahati, Assam', signal: '0.6m below warning stage', status: 'MONITOR', offset: [28, -8], ranges: [7, 30] },
 			{ lat: 28.6, lon: 77.2, hazard: 'pollution', severity: 'high', label: 'Delhi NCR', location: 'Delhi NCR, Delhi', signal: 'PM2.5 +28% baseline', status: 'ACT NOW', offset: [30, -18], ranges: [24, 7, 30] },
 			{ lat: 10.5, lon: 76.3, hazard: 'flood', severity: 'water', label: 'Kerala', location: 'Ernakulam, Kerala', signal: 'River level stable', status: 'MONITOR', offset: [-30, 12], ranges: [7, 30] },
-			{ lat: 25.8, lon: 76.5, hazard: 'fire', severity: 'watch', label: 'Ranthambore', location: 'Ranthambore, Rajasthan', signal: 'New hotspot cluster', status: 'ACT NOW', offset: [-42, 12], ranges: [7, 30] }
 		];
 		var liveMap = L.map('live-map', { zoomControl: true, attributionControl: true, minZoom: 4, maxZoom: 12 }).setView([22.5, 79], 5);
 		var terrainTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Tiles © Esri' }).addTo(liveMap);
@@ -440,7 +439,6 @@
 			{ id: 'gadchiroli-fire', lat: 19.9, lon: 80.0, type: 'fire', icon: '♨', title: 'Forest fire activity', location: 'Gadchiroli, Maharashtra', time: '12m ago', action: 'HIGH · ACT NOW', detail: 'Thermal confidence 92%. Wind is moving east at 18 km/h.', ranges: [24, 7, 30] },
 			{ id: 'guwahati-river', lat: 26.1, lon: 91.7, type: 'flood', icon: '≋', title: 'River level rising', location: 'Guwahati, Assam', time: '28m ago', action: 'MEDIUM · MONITOR', detail: 'Brahmaputra is 0.6m below warning stage.', ranges: [7, 30] },
 			{ id: 'delhi-air', lat: 28.6, lon: 77.2, type: 'air', icon: '✣', title: 'Air quality shift', location: 'Delhi NCR, Delhi', time: '1h ago', action: 'MEDIUM · MONITOR', detail: 'PM2.5 trend is 28% above the 7-day baseline.', ranges: [24, 7, 30] },
-			{ id: 'ranthambore-thermal', lat: 25.8, lon: 76.5, type: 'thermal', icon: '♨', title: 'Thermal anomaly', location: 'Ranthambore, Rajasthan', time: '2h ago', action: 'HIGH · ACT NOW', detail: 'Satellite pass confirms a new hotspot cluster near the southern buffer.', ranges: [7, 30] }
 		];
 		function highlightPriorityAlert(alertId) {
 			document.querySelectorAll('.alert.map-linked').forEach(function (alert) { alert.classList.remove('map-linked'); });
