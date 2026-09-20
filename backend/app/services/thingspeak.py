@@ -17,6 +17,7 @@ FIELD_NAMES = (
     "temperature",
     "humidity",
     "rainfall",
+    "flame_sensor",
 )
 
 

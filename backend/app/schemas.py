@@ -58,6 +58,7 @@ class SensorReading(BaseModel):
     temperature: float | None = None
     humidity: float | None = None
     rainfall: float | None = None
+    flame_sensor: float | None = None
 
 
 class AlertSubscriptionCreate(BaseModel):
