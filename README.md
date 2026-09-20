@@ -25,7 +25,7 @@ streamlit run app.py
 
 The dashboard reads `PRITHVINET_API_URL` when set and otherwise uses `http://localhost:8000/api/v1`. If the API is unavailable, set `SENSOR_DATA_FILE` to a JSON or CSV file containing timestamped readings. Optional sensor coordinates can be supplied with `SENSOR_LOCATIONS_FILE` as a JSON list containing `name`, `latitude`, and `longitude`.
 
-The map uses keyless OpenStreetMap/CartoDB tiles by default. To use Mapbox styles instead, create a root `.env` file with `MAPBOX_TOKEN=...`; the dashboard loads it with `python-dotenv`. Restrict the Mapbox public token to your local/deployed host in the Mapbox token settings. No Google Maps key is used by this project.
+The map uses OpenStreetMap tiles and requires no API key. It is centered on India at latitude `22.5`, longitude `79.0`, with initial zoom `5` in both dashboard themes.
 
 ThingSpeak field mapping is `field1` soil moisture, `field2` water level, `field3` temperature, `field4` humidity, `field5` rainfall, and `field6` flame sensor. A positive flame value produces a critical alert; missing flame data is shown as unavailable rather than as no flame.
 

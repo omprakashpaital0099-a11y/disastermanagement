@@ -9,11 +9,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit_folium import st_folium
-from dotenv import load_dotenv
 
 from data_loader import DataSourceError, filter_history, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_stats
-
-load_dotenv()
 
 st.set_page_config(page_title="SPATIAL X | Environmental Intelligence", page_icon="🌿", layout="wide", initial_sidebar_state="expanded")
 
@@ -152,29 +149,51 @@ def render_sensor_cards(sensor: dict[str, Any] | None) -> None:
         column.caption(f"{t('last_update')}: {(sensor or {}).get('timestamp', t('unavailable'))}")
 
 
-def render_map(alerts: list[dict[str, Any]], locations: list[dict[str, Any]]) -> None:
+def render_map(alerts: list[dict[str, Any]], locations: list[dict[str, Any]], sensor: dict[str, Any] | None) -> None:
     st.markdown(f'<div class="section-label">{t("map")}</div>', unsafe_allow_html=True)
-    dark = st.session_state.theme == t("dark")
-    mapbox_token = os.getenv("MAPBOX_TOKEN", "").strip()
-    if mapbox_token:
-        style = "mapbox/dark-v11" if dark else "mapbox/streets-v12"
-        fmap = folium.Map(location=[22.5, 79.0], zoom_start=5, tiles=None, control_scale=True)
-        folium.TileLayer(
-            tiles=f"https://api.mapbox.com/styles/v1/{style}/tiles/{{z}}/{{x}}/{{y}}?access_token={mapbox_token}",
-            attr="© Mapbox © OpenStreetMap",
-            name="Mapbox",
-            overlay=False,
-            control=True,
-            max_zoom=18,
-        ).add_to(fmap)
-    else:
-        fmap = folium.Map(location=[22.5, 79.0], zoom_start=5, tiles="CartoDB dark_matter" if dark else "OpenStreetMap", control_scale=True)
+    fmap = folium.Map(
+        location=[22.5, 79.0],
+        zoom_start=5,
+        tiles="OpenStreetMap",
+        control_scale=True,
+    )
     marker_count = 0
+    sensor_styles = {
+        "flame": ("red", "fire"),
+        "flame_sensor": ("red", "fire"),
+        "temperature": ("orange", "thermometer-half"),
+        "humidity": ("lightblue", "tint"),
+        "water": ("blue", "tint"),
+        "water_level": ("blue", "tint"),
+        "soil": ("green", "leaf"),
+        "soil_moisture": ("green", "leaf"),
+    }
+    sensor_keys = {
+        "flame": "flame_sensor",
+        "flame_sensor": "flame_sensor",
+        "temperature": "temperature",
+        "humidity": "humidity",
+        "water": "water_level",
+        "water_level": "water_level",
+        "soil": "soil_moisture",
+        "soil_moisture": "soil_moisture",
+    }
     for location in locations:
         try:
             lat, lon = float(location["latitude"]), float(location["longitude"])
             name = html.escape(str(location.get("name", "Sensor")))
-            folium.Marker([lat, lon], tooltip=name, popup=folium.Popup(f"<b>{name}</b><br>Sensor location", max_width=240), icon=folium.Icon(color="green", icon="signal", prefix="fa")).add_to(fmap)
+            sensor_type = str(location.get("sensor_type", location.get("type", "sensor"))).lower()
+            sensor_key = sensor_keys.get(sensor_type)
+            value = location.get("value")
+            if value is None and sensor and sensor_key:
+                value = sensor.get(sensor_key)
+            unit = SENSOR_META.get(sensor_key, ("Sensor", "", "", ""))[2] if sensor_key else ""
+            status = "Unavailable" if value is None else "CRITICAL" if sensor_key == "flame_sensor" and float(value) > 0 else "NORMAL"
+            current = "Unavailable" if value is None else f"{float(value):.1f} {unit}".strip()
+            color, icon = sensor_styles.get(sensor_type, ("green", "signal"))
+            updated = html.escape(str(location.get("last_updated", (sensor or {}).get("timestamp", "Unavailable"))))
+            popup = f"<b>{name}</b><br>Current value: {html.escape(current)}<br>Unit: {html.escape(unit or 'Unavailable')}<br>Status: {status}<br>Last update: {updated}"
+            folium.Marker([lat, lon], tooltip=name, popup=folium.Popup(popup, max_width=260), icon=folium.Icon(color=color, icon=icon, prefix="fa")).add_to(fmap)
             marker_count += 1
         except (KeyError, TypeError, ValueError):
             continue
@@ -189,7 +208,7 @@ def render_map(alerts: list[dict[str, Any]], locations: list[dict[str, Any]]) ->
             marker_count += 1
         except (KeyError, TypeError, ValueError):
             continue
-    st_folium(fmap, use_container_width=True, height=480, returned_objects=[])
+    st_folium(fmap, use_container_width=True, height=600, returned_objects=[])
     if not marker_count:
         st.caption("No coordinate-bearing sensor or hazard records are available yet. The map is centered on India until locations arrive.")
 
@@ -249,7 +268,7 @@ def main() -> None:
         st.markdown(f'<div class="notice">{t("source_unavailable")}</div>', unsafe_allow_html=True)
     render_overview(sensor, alerts, stats)
     render_sensor_cards(sensor)
-    render_map(alerts, get_sensor_locations())
+    render_map(alerts, get_sensor_locations(), sensor)
     render_history(history)
     render_alerts(alerts, sensor)
     st.markdown(f'<div class="section-label">{t("authority")}</div>', unsafe_allow_html=True)
