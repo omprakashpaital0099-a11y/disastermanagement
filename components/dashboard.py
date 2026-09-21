@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from streamlit_folium import st_folium
 
-from data_loader import filter_history, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_sensor_source_status, get_stats, get_thingspeak_channel_id
+from data_loader import filter_history, format_sensor_timestamp, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_sensor_source_status, get_stats, get_thingspeak_channel_id
 
 TRANSLATIONS = {
     "English": {
@@ -99,8 +99,8 @@ def render_overview(sensor: dict[str, Any] | None, alerts: list[dict[str, Any]])
     st.markdown('<div class="section-label">NETWORK STATUS</div>', unsafe_allow_html=True)
     online = sum(sensor is not None and sensor.get(key) is not None for key in SENSOR_META)
     attention = sum(sensor_status(sensor, key) in {"warning", "critical"} for key in SENSOR_META)
-    update = str(sensor.get("timestamp", t("unavailable")))[:19].replace("T", " ") if sensor else t("unavailable")
-    for column, label, value, delta in zip(st.columns(4), ["Total data channels", "Online channels", "Requiring attention", t("last_update")], [5, online, attention, update], ["5 configured", "Live contract", "Sensor-derived", "UTC"]):
+    update = format_sensor_timestamp(sensor["timestamp"]) if sensor and sensor.get("timestamp") else t("unavailable")
+    for column, label, value, delta in zip(st.columns(4), ["Total data channels", "Online channels", "Requiring attention", t("last_update")], [5, online, attention, update], ["5 configured", "Live contract", "Sensor-derived", "IST"]):
         column.metric(label, value, delta)
     flame = flame_detected(sensor)
     if flame is True:
@@ -122,7 +122,8 @@ def render_sensor_cards(sensor: dict[str, Any] | None) -> None:
         display = t("flame") if key == "flame_sensor" and value is not None and flame_detected(sensor) else t("no_flame") if key == "flame_sensor" and value is not None else value_text(value, unit)
         column.markdown(f"**{icon} {label}**<br><span class='status-pill status-{state}'>{state.upper()}</span>", unsafe_allow_html=True)
         column.metric(label, display)
-        column.caption(f"{t('last_update')}: {(sensor or {}).get('timestamp', t('unavailable'))}")
+        timestamp = format_sensor_timestamp((sensor or {}).get("timestamp")) if sensor and sensor.get("timestamp") else t("unavailable")
+        column.caption(f"{t('last_update')}: {timestamp}")
 
 
 def render_map(sensor: dict[str, Any] | None, alerts: list[dict[str, Any]]) -> None:
@@ -137,7 +138,8 @@ def render_map(sensor: dict[str, Any] | None, alerts: list[dict[str, Any]]) -> N
             unit = SENSOR_META.get(key, ("", "", "", ""))[2]
             status = "Unavailable" if value is None else "CRITICAL" if key == "flame_sensor" and float(value) > 0 else "NORMAL"
             name = html.escape(str(location.get("name", "Sensor")))
-            updated = html.escape(str(location.get("last_updated", (sensor or {}).get("timestamp", "Unavailable"))))
+            raw_updated = location.get("last_updated", (sensor or {}).get("timestamp", "Unavailable"))
+            updated = html.escape(format_sensor_timestamp(raw_updated) if raw_updated != "Unavailable" else raw_updated)
             popup = f"<b>{name}</b><br>Value: {html.escape(value_text(value, unit))}<br>Unit: {html.escape(unit or 'Unavailable')}<br>Status: {status}<br>Last update: {updated}"
             folium.Marker([float(location["latitude"]), float(location["longitude"])], tooltip=name, popup=folium.Popup(popup, max_width=260), icon=folium.Icon(color=color, icon=icon, prefix="fa")).add_to(fmap)
         except (KeyError, TypeError, ValueError):
@@ -167,7 +169,9 @@ def render_history(history: pd.DataFrame) -> None:
     if not chart.data:
         st.info(t("history_unavailable")); return
     chart.update_layout(height=340, margin=dict(l=10, r=10, t=20, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#8b9991")
-    st.plotly_chart(chart, use_container_width=True); st.dataframe(frame.tail(20), use_container_width=True, hide_index=True)
+    display_frame = frame.tail(20).copy()
+    display_frame["timestamp"] = display_frame["timestamp"].map(format_sensor_timestamp)
+    st.plotly_chart(chart, use_container_width=True); st.dataframe(display_frame, use_container_width=True, hide_index=True)
 
 
 def render_sensor_source(sensor: dict[str, Any] | None, history: pd.DataFrame) -> None:
@@ -176,14 +180,16 @@ def render_sensor_source(sensor: dict[str, Any] | None, history: pd.DataFrame) -
         if history.empty:
             st.error("ThingSpeak returned no sensor readings.")
             return
-        st.success(f"Connected to ThingSpeak channel {get_thingspeak_channel_id()} · Last update: {history.iloc[-1]['timestamp']}")
+        st.success(f"Connected to ThingSpeak channel {get_thingspeak_channel_id()} · Last update: {format_sensor_timestamp(history.iloc[-1]['timestamp'])}")
         latest = history.iloc[-1]
         fields = [key for key in SENSOR_META if key in history and pd.notna(latest.get(key))]
         for start in range(0, len(fields), 4):
             columns = st.columns(min(4, len(fields) - start))
             for column, field in zip(columns, fields[start:start + 4]):
                 column.metric(SENSOR_META[field][0], latest[field])
-        st.dataframe(history.tail(20), use_container_width=True, hide_index=True)
+        display_history = history.tail(20).copy()
+        display_history["timestamp"] = display_history["timestamp"].map(format_sensor_timestamp)
+        st.dataframe(display_history, use_container_width=True, hide_index=True)
     elif sensor:
         st.info("Using the configured backend/local sensor source.")
     else:

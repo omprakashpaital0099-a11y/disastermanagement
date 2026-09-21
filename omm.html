@@ -568,7 +568,7 @@
 		function formatLocalTimestamp(value) {
 			var timestamp = new Date(value);
 			if (Number.isNaN(timestamp.getTime())) return null;
-			return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' }).format(timestamp);
+			return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }).format(timestamp).replace(',', '') + ' IST';
 		}
 		function renderLatestSensor(data) {
 			var localTimestamp = formatLocalTimestamp(data.timestamp);
@@ -592,8 +592,8 @@
 			var area = '0,180 ' + line + ' 600,180';
 			chart.innerHTML = '<svg viewBox="0 0 600 180" preserveAspectRatio="none" role="img" aria-label="' + t(sensorLabelKeys[sensorField]) + ' ' + t('sensorHistory').toLowerCase() + '"><polygon class="sensor-chart-area" points="' + area + '"></polygon><polyline class="sensor-chart-line" points="' + line + '"></polyline></svg>';
 			var first = new Date(points[0].timestamp); var last = new Date(points[points.length - 1].timestamp);
-			document.getElementById('sensor-history-start').textContent = Number.isNaN(first.getTime()) ? '--' : first.toLocaleString();
-			document.getElementById('sensor-history-end').textContent = Number.isNaN(last.getTime()) ? '--' : last.toLocaleString();
+			document.getElementById('sensor-history-start').textContent = Number.isNaN(first.getTime()) ? '--' : formatLocalTimestamp(first);
+			document.getElementById('sensor-history-end').textContent = Number.isNaN(last.getTime()) ? '--' : formatLocalTimestamp(last);
 		}
 		function setSensorStatus(online, message) {
 			var status = document.getElementById('sensor-live-status'); status.textContent = online ? t('live') : t('offline'); status.className = 'live-status ' + (online ? 'online' : 'offline');

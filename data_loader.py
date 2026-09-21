@@ -7,6 +7,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -24,6 +25,7 @@ KNOWN_FIELD_NAMES = {
     "field5": "temperature",
     "field6": "humidity",
 }
+INDIA_TIMEZONE = ZoneInfo("Asia/Kolkata")
 
 
 def _secret(name: str, default: str = "") -> str:
@@ -54,6 +56,14 @@ def _number(value: Any) -> Any:
         return int(number) if number.is_integer() else number
     except (TypeError, ValueError):
         return value
+
+
+def format_sensor_timestamp(value: Any) -> str:
+    """Format an aware timestamp in India Standard Time for dashboard display."""
+    timestamp = pd.Timestamp(value)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.tz_localize("UTC")
+    return timestamp.tz_convert(INDIA_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S IST")
 
 
 def fetch_thingspeak_data(results: int = 20) -> pd.DataFrame:
@@ -88,7 +98,7 @@ def fetch_thingspeak_data(results: int = 20) -> pd.DataFrame:
     frame = pd.DataFrame(records)
     if frame.empty:
         raise DataSourceError("ThingSpeak returned no usable sensor readings.")
-    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True)
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True).dt.tz_convert(INDIA_TIMEZONE)
     frame = frame.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
     if frame.empty:
         raise DataSourceError("ThingSpeak returned readings without valid timestamps.")
@@ -97,7 +107,7 @@ def fetch_thingspeak_data(results: int = 20) -> pd.DataFrame:
 
 def _thingspeak_latest(frame: pd.DataFrame) -> dict[str, Any]:
     latest = frame.iloc[-1].dropna().to_dict()
-    latest["timestamp"] = frame.iloc[-1]["timestamp"].isoformat()
+    latest["timestamp"] = frame.iloc[-1]["timestamp"]
     return latest
 
 
@@ -169,7 +179,7 @@ def get_sensor_history(results: int = 8000) -> pd.DataFrame:
         records = _local_records()
     frame = pd.DataFrame(records)
     if "timestamp" in frame:
-        frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True)
+        frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True).dt.tz_convert(INDIA_TIMEZONE)
         frame = frame.dropna(subset=["timestamp"]).sort_values("timestamp")
     return frame.reset_index(drop=True)
 
