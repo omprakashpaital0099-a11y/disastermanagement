@@ -35,30 +35,24 @@ ThingSpeak field mapping is `field1` soil moisture, `field2` water level, `field
 
 ## ThingSpeak connection
 
-The FastAPI service connects to the configured ThingSpeak channel and exposes the normalized readings to Streamlit:
+The Streamlit dashboard connects directly to the configured ThingSpeak channel and exposes normalized readings in the live and history views:
 
 ```text
-ThingSpeak -> backend/app/services/thingspeak.py -> /api/v1/sensors/latest
-									 -> /api/v1/sensors/history
-									 -> Streamlit dashboard
+ThingSpeak -> data_loader.py -> Streamlit dashboard
 ```
 
-Configure these values in `backend/.env` (never commit that file):
+Configure these values as Streamlit secrets (never commit `.streamlit/secrets.toml`):
 
 ```env
 THINGSPEAK_CHANNEL_ID=3490996
-THINGSPEAK_READ_API_KEY=HFM9GZC2AWR1V2FT
-THINGSPEAK_WRITE_API_KEY=HFM9GZC2AWR1V2FT
-THINGSPEAK_API_URL=https://api.thingspeak.com
-THINGSPEAK_FLAME_FIELD=5
-THINGSPEAK_RAINFALL_FIELD=6
+THINGSPEAK_READ_API_KEY=009S8OH1DAIW04R7
 ```
 
-The configured channel is public, so its read key may remain empty. A private channel requires its ThingSpeak read API key. The backend rejects stale latest readings using `THINGSPEAK_MAX_AGE_SECONDS`; historical readings remain available when the device has not reported recently.
+The configured channel is public, so its read key may remain empty. A private channel requires its ThingSpeak read API key. The dashboard requests the latest 20 feeds directly, displays actual field values, and does not require `PRITHVINET_API_URL` for sensor data.
 2. Open Streamlit Community Cloud and select **Deploy an app**.
 3. Choose the repository and select `app.py` as the main file.
-4. Add `PRITHVINET_API_URL` through the app settings or environment configuration if the API is hosted elsewhere.
-5. Add private values through Streamlit secrets or the deployment environment. Do not commit `.env` or `.streamlit/secrets.toml`.
+4. Add `THINGSPEAK_CHANNEL_ID` and, for private channels, `THINGSPEAK_READ_API_KEY` through Streamlit secrets. Do not commit `.streamlit/secrets.toml`.
+5. Add other private values through Streamlit secrets or the deployment environment.
 6. Deploy and verify the public URL, live sensor state, map, alert list, history controls, and response page.
 
-The data flow is: ThingSpeak or another provider -> FastAPI ingestion and `/api/v1` endpoints -> `data_loader.py` -> Streamlit cards, map, charts, alerts, and response dashboard.
+The data flow is: ThingSpeak -> `data_loader.py` -> Streamlit cards and sensor history charts. Hazard events, maps, alerts, and response data continue to use the existing backend APIs.
