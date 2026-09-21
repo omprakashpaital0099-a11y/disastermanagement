@@ -138,8 +138,8 @@ def render_map(sensor: dict[str, Any] | None, alerts: list[dict[str, Any]]) -> N
             unit = SENSOR_META.get(key, ("", "", "", ""))[2]
             status = "Unavailable" if value is None else "CRITICAL" if key == "flame_sensor" and float(value) > 0 else "NORMAL"
             name = html.escape(str(location.get("name", "Sensor")))
-            raw_updated = location.get("last_updated", (sensor or {}).get("timestamp", "Unavailable"))
-            updated = html.escape(format_sensor_timestamp(raw_updated) if raw_updated != "Unavailable" else raw_updated)
+            raw_updated = location.get("last_updated", (sensor or {}).get("timestamp"))
+            updated = html.escape(format_sensor_timestamp(raw_updated))
             popup = f"<b>{name}</b><br>Value: {html.escape(value_text(value, unit))}<br>Unit: {html.escape(unit or 'Unavailable')}<br>Status: {status}<br>Last update: {updated}"
             folium.Marker([float(location["latitude"]), float(location["longitude"])], tooltip=name, popup=folium.Popup(popup, max_width=260), icon=folium.Icon(color=color, icon=icon, prefix="fa")).add_to(fmap)
         except (KeyError, TypeError, ValueError):

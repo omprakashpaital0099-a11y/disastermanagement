@@ -60,7 +60,11 @@ def _number(value: Any) -> Any:
 
 def format_sensor_timestamp(value: Any) -> str:
     """Format an aware timestamp in India Standard Time for dashboard display."""
+    if value is None or value == "":
+        return "Unavailable"
     timestamp = pd.Timestamp(value)
+    if pd.isna(timestamp):
+        return "Unavailable"
     if timestamp.tzinfo is None:
         timestamp = timestamp.tz_localize("UTC")
     return timestamp.tz_convert(INDIA_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S IST")
