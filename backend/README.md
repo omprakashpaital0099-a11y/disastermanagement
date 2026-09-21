@@ -13,7 +13,7 @@ Each adapter lives in `app/services/` and owns its response normalization while 
 
 Configure each provider URL, key, and interval in `.env`. Jobs execute immediately at startup and repeat independently. A failed source is retried three times with exponential backoff and logged with its source name; one source failure does not stop the others.
 
-ThingSpeak fields default to this project channel's layout: `field1` soil moisture, `field2` water level, `field3` temperature, `field4` humidity, `field5` flame status, and optional `field6` rainfall. Configure `THINGSPEAK_FLAME_FIELD` and `THINGSPEAK_RAINFALL_FIELD` when another channel uses a different layout. A flame value greater than zero is treated as detected by the dashboard. Set `THINGSPEAK_CHANNEL_ID`, `THINGSPEAK_READ_API_KEY`, and `THINGSPEAK_WRITE_API_KEY` in `.env`; the write key is used by `POST /api/v1/sensors/push`.
+ThingSpeak fields used by the dashboard are `field1` soil moisture, `field2` water level, `field3` flame status, `field5` temperature, and `field6` humidity. Other ThingSpeak fields are ignored by the dashboard. A flame value greater than zero is treated as detected by the dashboard. Set `THINGSPEAK_CHANNEL_ID`, `THINGSPEAK_READ_API_KEY`, and `THINGSPEAK_WRITE_API_KEY` in `.env`; the write key is used by `POST /api/v1/sensors/push`.
 
 ## Run locally
 

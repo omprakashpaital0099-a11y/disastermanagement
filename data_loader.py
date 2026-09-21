@@ -20,10 +20,9 @@ class DataSourceError(RuntimeError):
 KNOWN_FIELD_NAMES = {
     "field1": "soil_moisture",
     "field2": "water_level",
-    "field3": "temperature",
-    "field4": "humidity",
-    "field5": "flame_sensor",
-    "field6": "rainfall",
+    "field3": "flame_sensor",
+    "field5": "temperature",
+    "field6": "humidity",
 }
 
 
@@ -83,11 +82,8 @@ def fetch_thingspeak_data(results: int = 20) -> pd.DataFrame:
         if not isinstance(feed, dict):
             continue
         record: dict[str, Any] = {"timestamp": feed.get("created_at")}
-        for key, value in feed.items():
-            if key.startswith("field"):
-                record[key] = _number(value)
-                if key in KNOWN_FIELD_NAMES:
-                    record[KNOWN_FIELD_NAMES[key]] = record[key]
+        for key, name in KNOWN_FIELD_NAMES.items():
+            record[name] = _number(feed.get(key))
         records.append(record)
     frame = pd.DataFrame(records)
     if frame.empty:

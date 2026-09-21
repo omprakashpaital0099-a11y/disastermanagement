@@ -29,10 +29,9 @@ def _reading(feed: dict[str, Any]) -> SensorReading:
         timestamp=datetime.fromisoformat(timestamp.replace("Z", "+00:00")),
         soil_moisture=_number(feed.get("field1")),
         water_level=_number(feed.get("field2")),
-        temperature=_number(feed.get("field3")),
-        humidity=_number(feed.get("field4")),
-        rainfall=_number(feed.get(f"field{settings.thingspeak_rainfall_field}")),
-        flame_sensor=_number(feed.get(f"field{settings.thingspeak_flame_field}")),
+        temperature=_number(feed.get("field5")),
+        humidity=_number(feed.get("field6")),
+        flame_sensor=_number(feed.get("field3")),
     )
 
 

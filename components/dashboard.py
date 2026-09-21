@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from streamlit_folium import st_folium
 
-from data_loader import DataSourceError, filter_history, fetch_thingspeak_data, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_sensor_source_status, get_stats, get_thingspeak_channel_id
+from data_loader import filter_history, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_sensor_source_status, get_stats, get_thingspeak_channel_id
 
 TRANSLATIONS = {
     "English": {
@@ -22,9 +22,9 @@ TRANSLATIONS = {
 SENSOR_META = {
     "soil_moisture": ("Soil Moisture", "मिट्टी की नमी", "%", "💧"),
     "water_level": ("Water Level", "जल स्तर", "m", "〰️"),
+    "flame_sensor": ("Flame Sensor", "फ्लेम सेंसर", "value", "🔥"),
     "temperature": ("Temperature", "तापमान", "°C", "◌"),
     "humidity": ("Humidity", "आर्द्रता", "%", "◒"),
-    "flame_sensor": ("Flame Sensor", "फ्लेम सेंसर", "value", "🔥"),
 }
 
 
@@ -160,9 +160,9 @@ def render_history(history: pd.DataFrame) -> None:
     if frame.empty or "timestamp" not in frame:
         st.info(t("history_unavailable")); return
     chart = go.Figure()
-    chart_fields = [key for key in SENSOR_META if key in frame and frame[key].notna().any()]
-    chart_fields += [key for key in frame if key.startswith("field") and frame[key].notna().any() and key not in chart_fields]
-    for key in chart_fields:
+    for key in SENSOR_META:
+        if key not in frame or not frame[key].notna().any():
+            continue
         chart.add_trace(go.Scatter(x=frame.timestamp, y=frame[key], mode="lines", name=SENSOR_META.get(key, (key,))[0]))
     if not chart.data:
         st.info(t("history_unavailable")); return
@@ -178,11 +178,11 @@ def render_sensor_source(sensor: dict[str, Any] | None, history: pd.DataFrame) -
             return
         st.success(f"Connected to ThingSpeak channel {get_thingspeak_channel_id()} · Last update: {history.iloc[-1]['timestamp']}")
         latest = history.iloc[-1]
-        fields = [key for key in history if key.startswith("field") and pd.notna(latest.get(key))]
+        fields = [key for key in SENSOR_META if key in history and pd.notna(latest.get(key))]
         for start in range(0, len(fields), 4):
             columns = st.columns(min(4, len(fields) - start))
             for column, field in zip(columns, fields[start:start + 4]):
-                column.metric(field, latest[field])
+                column.metric(SENSOR_META[field][0], latest[field])
         st.dataframe(history.tail(20), use_container_width=True, hide_index=True)
     elif sensor:
         st.info("Using the configured backend/local sensor source.")
