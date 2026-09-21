@@ -27,7 +27,7 @@ The dashboard reads `PRITHVINET_API_URL` when set and otherwise uses `http://loc
 
 The map uses OpenStreetMap tiles and requires no API key. It is centered on India at latitude `22.5`, longitude `79.0`, with initial zoom `5` in both dashboard themes.
 
-ThingSpeak field mapping is `field1` soil moisture, `field2` water level, `field3` temperature, `field4` humidity, `field5` rainfall, and `field6` flame sensor. A positive flame value produces a critical alert; missing flame data is shown as unavailable rather than as no flame.
+ThingSpeak field mapping is `field1` soil moisture, `field2` water level, `field3` temperature, `field4` humidity, `field5` flame sensor, and `field6` rainfall. A positive flame value produces a critical alert; missing flame data is shown as unavailable rather than as no flame.
 
 ## Streamlit Community Cloud
 
@@ -47,7 +47,8 @@ Configure these values in `backend/.env` (never commit that file):
 
 ```env
 THINGSPEAK_CHANNEL_ID=3490996
-THINGSPEAK_READ_API_KEY=
+THINGSPEAK_READ_API_KEY=HFM9GZC2AWR1V2FT
+THINGSPEAK_WRITE_API_KEY=HFM9GZC2AWR1V2FT
 THINGSPEAK_API_URL=https://api.thingspeak.com
 THINGSPEAK_FLAME_FIELD=5
 THINGSPEAK_RAINFALL_FIELD=6

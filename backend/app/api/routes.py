@@ -12,7 +12,7 @@ from app.schemas import AlertSubscriptionCreate, AlertSubscriptionRead, HazardCr
 from app.services.alerting import evaluate_event_alerts
 from app.services.risk_scoring import scorer
 from app.services.hazard_writer import json_safe
-from app.services.thingspeak import ThingSpeakError, latest_reading, recent_readings
+from app.services.thingspeak import ThingSpeakError, latest_reading, push_reading, recent_readings
 
 router = APIRouter(prefix="/api/v1", tags=["hazards"])
 settings = get_settings()
@@ -143,5 +143,14 @@ async def sensor_latest() -> SensorReading:
 async def sensor_history(results: int = Query(default=100, ge=1, le=8000)) -> list[SensorReading]:
     try:
         return await recent_readings(results=results)
+    except ThingSpeakError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from error
+
+
+@router.post("/sensors/push")
+async def sensor_push(payload: SensorReading) -> dict[str, int | str]:
+    try:
+        entry_id = await push_reading(payload)
+        return {"status": "pushed", "entry_id": entry_id}
     except ThingSpeakError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from error

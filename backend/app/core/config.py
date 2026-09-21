@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     cpcb_interval_minutes: int = 20
     thingspeak_channel_id: str = ""
     thingspeak_read_api_key: str = ""
+    thingspeak_write_api_key: str = ""
     thingspeak_api_url: str = "https://api.thingspeak.com"
     thingspeak_timeout_seconds: float = 10.0
     thingspeak_max_age_seconds: int = 300

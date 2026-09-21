@@ -80,3 +80,36 @@ async def recent_readings(results: int = 100) -> list[SensorReading]:
         except (ThingSpeakError, TypeError, ValueError):
             continue
     return readings
+
+
+async def push_reading(reading: SensorReading) -> int:
+    settings = get_settings()
+    if not settings.thingspeak_channel_id:
+        raise ThingSpeakError("ThingSpeak channel is not configured")
+    if not settings.thingspeak_write_api_key:
+        raise ThingSpeakError("ThingSpeak write API key is not configured")
+
+    params: dict[str, str | float] = {"api_key": settings.thingspeak_write_api_key}
+    values = {
+        1: reading.soil_moisture,
+        2: reading.water_level,
+        3: reading.temperature,
+        4: reading.humidity,
+        settings.thingspeak_flame_field: reading.flame_sensor,
+        settings.thingspeak_rainfall_field: reading.rainfall,
+    }
+    for field, value in values.items():
+        if value is not None:
+            params[f"field{field}"] = value
+
+    url = f"{settings.thingspeak_api_url.rstrip('/')}/update"
+    try:
+        async with httpx.AsyncClient(timeout=settings.thingspeak_timeout_seconds) as client:
+            response = await client.post(url, data=params)
+            response.raise_for_status()
+            entry_id = int(response.text.strip())
+    except (httpx.HTTPError, ValueError) as error:
+        raise ThingSpeakError("ThingSpeak rejected the sensor reading") from error
+    if entry_id <= 0:
+        raise ThingSpeakError("ThingSpeak rejected the sensor reading")
+    return entry_id

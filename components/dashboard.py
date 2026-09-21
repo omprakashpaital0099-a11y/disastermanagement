@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from streamlit_folium import st_folium
 
-from data_loader import filter_history, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_stats
+from data_loader import DataSourceError, filter_history, fetch_thingspeak_data, get_alerts, get_sensor_data, get_sensor_history, get_sensor_locations, get_sensor_source_status, get_stats, get_thingspeak_channel_id
 
 TRANSLATIONS = {
     "English": {
@@ -160,13 +160,34 @@ def render_history(history: pd.DataFrame) -> None:
     if frame.empty or "timestamp" not in frame:
         st.info(t("history_unavailable")); return
     chart = go.Figure()
-    for key in SENSOR_META:
-        if key in frame and frame[key].notna().any():
-            chart.add_trace(go.Scatter(x=frame.timestamp, y=frame[key], mode="lines", name=SENSOR_META[key][0]))
+    chart_fields = [key for key in SENSOR_META if key in frame and frame[key].notna().any()]
+    chart_fields += [key for key in frame if key.startswith("field") and frame[key].notna().any() and key not in chart_fields]
+    for key in chart_fields:
+        chart.add_trace(go.Scatter(x=frame.timestamp, y=frame[key], mode="lines", name=SENSOR_META.get(key, (key,))[0]))
     if not chart.data:
         st.info(t("history_unavailable")); return
     chart.update_layout(height=340, margin=dict(l=10, r=10, t=20, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#8b9991")
     st.plotly_chart(chart, use_container_width=True); st.dataframe(frame.tail(20), use_container_width=True, hide_index=True)
+
+
+def render_sensor_source(sensor: dict[str, Any] | None, history: pd.DataFrame) -> None:
+    source, _ = get_sensor_source_status()
+    if source == "ThingSpeak":
+        if history.empty:
+            st.error("ThingSpeak returned no sensor readings.")
+            return
+        st.success(f"Connected to ThingSpeak channel {get_thingspeak_channel_id()} · Last update: {history.iloc[-1]['timestamp']}")
+        latest = history.iloc[-1]
+        fields = [key for key in history if key.startswith("field") and pd.notna(latest.get(key))]
+        for start in range(0, len(fields), 4):
+            columns = st.columns(min(4, len(fields) - start))
+            for column, field in zip(columns, fields[start:start + 4]):
+                column.metric(field, latest[field])
+        st.dataframe(history.tail(20), use_container_width=True, hide_index=True)
+    elif sensor:
+        st.info("Using the configured backend/local sensor source.")
+    else:
+        st.error("No sensor data is available.")
 
 
 def render_alerts(alerts: list[dict[str, Any]], sensor: dict[str, Any] | None) -> None:
@@ -184,7 +205,10 @@ def overview_page() -> None:
 
 
 def live_page() -> None:
-    sensor, _, _, _ = load_data(); render_header(); render_sensor_cards(sensor)
+    if st.button("Refresh data", type="primary"):
+        st.cache_data.clear()
+        st.rerun()
+    sensor, history, _, _ = load_data(); render_header(); render_sensor_source(sensor, history); render_sensor_cards(sensor); render_history(history)
 
 
 def map_page() -> None:
@@ -192,7 +216,7 @@ def map_page() -> None:
 
 
 def history_page() -> None:
-    _, history, _, _ = load_data(); render_header(); render_history(history)
+    _, history, _, _ = load_data(); render_header(); render_sensor_source(None, history); render_history(history)
 
 
 def alerts_page() -> None:
